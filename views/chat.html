@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<head>
+        <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+        <script>
+                let url = "wss://" + document.URL.slice(8)
+                let ws = new WebSocket(url);
+                let username = "Anonymous"
+                if(document.cookie)
+                        username = document.cookie.split(';').filter((str)=>str.startsWith("username="))[0].split('=')[1].replace("%20", " ");
+                ws.onmessage = (message) => {
+                        const msg = JSON.parse(message.data)
+                        switch(msg.type){
+                                case "chat":
+                                        $("#messages").append($("<li>").text(msg.data))
+                                        break;
+                                case "whisper":
+                                        $("#messages").append($("<li>").append($("<i>").text(msg.data)))
+                                        break;
+                                case "server":
+                                        $("#messages").append($("<li>").append($("<b>").text(msg.data)))
+                                        break;
+                                case "userlist":
+                                        $("#users").empty();
+                                        for (let i = 0; i < msg.data.length; i++) {$('#users').append($('<li>').append($('<b>').text(msg.data[i])))}
+                                        break;
+                                case "users":
+                                        ws.send(JSON.stringify({type: "user", data: username}))
+                                        break;
+                        }
+                }
+                function sendMessage() {
+                        const text = $("#message").val();
+                        if(text.startsWith('/')){
+                                switch(text.split(" ")[0]){
+                                        case "/name":
+                                                username = text.substring(text.indexOf(" ")+1)
+                                                rename();
+                                                break;
+                                        case "/w":
+                                                user = text.split(" ")[1]
+                                                msg = text.split(" ").slice(2).join(" ")
+                                                $("#messages").append($("<li>").append($("<i>").text("[to " + user + "] " + username + ": " + msg)))
+                                                ws.send(JSON.stringify({type: "whisper", user: user, data: msg}));
+
+                                }
+                        }
+                        else{
+                                ws.send(JSON.stringify({type: "chat", data: text}));
+                        }
+                        $("#message").val("");
+                        return false;
+                };
+                function rename() {
+                        ws.send(JSON.stringify({type: "rename", data: username})) 
+                        $.ajax("/name", {method: "PUT", data: {name: username}})
+                        return false;
+                }
+        </script>
+</head>
+<body>
+        <div>
+                <p>Users:</p>
+                <ul id="users"></ul>
+        </div>
+        <div>
+                <p>Messages:</p>
+                <ul id="messages"></ul>
+        </div>
+        <div>
+                <form id="chatbox" action="" onsubmit="return sendMessage()">
+                        <input id="message" autocomplete="off" /> 
+                        <button>Send</button>
+                </form>
+        </div>
+</body>
