@@ -4,9 +4,6 @@
         <script>
                 let url = "wss://" + document.URL.slice(8)
                 let ws = new WebSocket(url);
-                let username = "Anonymous"
-                if(document.cookie)
-                        username = document.cookie.split(';').filter((str)=>str.startsWith("username="))[0].split('=')[1].replace("%20", " ");
                 ws.onmessage = (message) => {
                         const msg = JSON.parse(message.data)
                         switch(msg.type){
@@ -23,9 +20,6 @@
                                         $("#users").empty();
                                         for (let i = 0; i < msg.data.length; i++) {$('#users').append($('<li>').append($('<b>').text(msg.data[i])))}
                                         break;
-                                case "users":
-                                        ws.send(JSON.stringify({type: "user", data: username}))
-                                        break;
                         }
                 }
                 function sendMessage() {
@@ -33,13 +27,12 @@
                         if(text.startsWith('/')){
                                 switch(text.split(" ")[0]){
                                         case "/name":
-                                                username = text.substring(text.indexOf(" ")+1)
-                                                rename();
+                                                rename(text.substring(text.indexOf(" ")+1));
                                                 break;
                                         case "/w":
                                                 user = text.split(" ")[1]
                                                 msg = text.split(" ").slice(2).join(" ")
-                                                $("#messages").append($("<li>").append($("<i>").text("[to " + user + "] " + username + ": " + msg)))
+                                                $("#messages").append($("<li>").append($("<i>").text("[to " + user + "] " + ": " + msg)))
                                                 ws.send(JSON.stringify({type: "whisper", user: user, data: msg}));
 
                                 }
@@ -50,7 +43,7 @@
                         $("#message").val("");
                         return false;
                 };
-                function rename() {
+                function rename(username) {
                         ws.send(JSON.stringify({type: "rename", data: username})) 
                         $.ajax("/name", {method: "PUT", data: {name: username}})
                         return false;
