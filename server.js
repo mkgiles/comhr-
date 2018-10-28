@@ -2,7 +2,8 @@ const fs = require('fs')
 const db = require('./db.js')
 const express = require('express')
 const app = express()
-const https = require('https').Server({key: fs.readFileSync('.env/host.key'), cert: fs.readFileSync('.env/host.cert')},app);
+const sslPath = process.env.SSLPATH
+const https = require('https').Server({key: fs.readFileSync(sslPath + 'privkey.pem'), cert: fs.readFileSync(sslPath + 'fullchain.pem')},app);
 const uuid = require('uuid/v4')
 const users = require('./routes/user.js')
 const session = require('express-session')
@@ -12,9 +13,8 @@ const MongoStore = require('connect-mongo')(session);
 const mongoose = require('mongoose')
 const User = require('./models/users.js')
 const Log = require('./models/logs.js')
-const env = require('./.env/vars.js')
 mongoose.connect(db, {useNewUrlParser: true})
-app.use(session({ secret: env.SECRET, resave: true, saveUninitialized: false, cookie: {secure: true}, store: new MongoStore({mongooseConnection: mongoose.connection, stringify : false})}));
+app.use(session({ secret: process.env.SECRET, resave: true, saveUninitialized: false, cookie: {secure: true}, store: new MongoStore({mongooseConnection: mongoose.connection, stringify : false})}));
 app.use(passport.initialize())
 app.use(passport.session())
 app.use(express.json())
