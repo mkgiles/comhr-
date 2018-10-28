@@ -42,26 +42,16 @@ passport.deserializeUser(function(id, done) {
                 done(err, user);
   });
 }); 
-app.get('/', (req,res) => {res.send("Welcome to comhrá!")})
-app.get('/chat', (req,res) => {
-                if(req.isAuthenticated())
-                        res.redirect('/chat/' + uuid());
-                else
-                        res.redirect('/login');
-});
-app.get('/chat/:id',(req,res)=>{
-        if(req.isAuthenticated()){
-                res.sendFile(__dirname + '/views/chat.html')
-        }
-        else
-                res.redirect('/login');
-})
-app.get('/chat/:id/log', (req,res)=>{
+const isAuth = (req,res,next) => {
         if(req.isAuthenticated())
-                Log.findOne({chat: req.params.id}).exec((e,r)=>res.send(r.messages));
+                next();
         else
                 res.redirect('/login');
-})
+}
+app.get('/', (req,res) => {res.send("Welcome to comhrá!")})
+app.get('/chat', isAuth,(req,res) => res.redirect('/chat/' + uuid()));
+app.get('/chat/:id',isAuth,(req,res)=>res.sendFile(__dirname + '/views/chat.html'))
+app.get('/chat/:id/log',isAuth, (req,res)=>Log.findOne({chat: req.params.id}).exec((e,r)=>res.send(r.messages)))
 app.get('/login', (req,res) => res.send("You need to log in or register to use this service."));
 app.put('/name', (req,res) => User.findByIdAndUpdate(req.user._id, {nickname: req.body.name}, {new: true}).exec((_,r)=>res.send(r)))
 app.put('/updatePassword', passport.authenticate('local'), users.updatePass);

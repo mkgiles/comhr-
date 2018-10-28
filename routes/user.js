@@ -2,7 +2,7 @@ const User = require('../models/users')
 const express = require('express')
 const router = express.Router()
 const passport = require('passport')
-router.updatePass = (req,res) => User.newPass(req.body.password)
+router.updatePass = (req,res) => User.newPass(req.body.newpassword)
         .then((hash) => User.findByIdAndUpdate(req.user._id, {pass: hash}))
         .then(res.redirect('/'));
 

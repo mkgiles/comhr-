@@ -24,18 +24,14 @@ ws.bcroom = (room, data) => {
 ws.whisper = (username, data) => {
         ws.clients.forEach((client) => {if(client.username == username && client.readyState == wsock.OPEN) client.send(data)})
 }
-//let usernames = []
+ws.users = (room,cb) => {const users = [];ws.clients.forEach((client) => {if(client.room == room && client.readyState == wsock.OPEN) users.push(client.username)}); return users}
+
 ws.on('connection', (sock,req) => {
-        sock.log = undefined
+        sock.log = {messages:[]}
         sock.room = req.url.split('/')[2]
-        Session.findById(req.headers['cookie'].split(';')[0].split('=s%3A')[1].split('.')[0]).exec((e,x)=>User.findById(x.session.passport.user).exec((e,user)=>{sock.user = user;sock.username = sock.user.nickname;ws.bcroom(sock.room, JSON.stringify({type: "server", data: "Server: " + sock.username + " has connected"}));}))
-        //Session.findById(req.headers['cookie'].split(';').filter((str)=>str.startsWith("connect.sid="))[0].split('=s%3A')[1].split('.')[0]).exec((err,session)=>User.findById(session.passport.user).exec((user) => sock.user = {_id: user._id, name : user.name, nickname: user.nickname}))
-        Log.findOne({chat: sock.room}, (err, res)=>{if(!res) Log.create({chat: sock.room, messages: []}, (e, r) => {sock.log = r});else sock.log=res});
-        //usernames[sock.room] = [];
-        //ws.bcroom(sock.room, JSON.stringify({type: "users"}));
+        Session.findById(req.headers['cookie'].split(';')[0].split('=s%3A')[1].split('.')[0]).exec((e,x)=>User.findById(x.session.passport.user).exec((e,user)=>{sock.user = user;sock.username = sock.user.nickname;ws.bcroom(sock.room, JSON.stringify({type: "server", data: "Server: " + sock.username + " has connected"}));ws.bcroom(sock.room,JSON.stringify({type: "userlist", data: ws.users(sock.room)}))}))
+        Log.findOne({chat: sock.room}, (err, res)=>{if(!res) Log.create({chat: sock.room, messages: []}, (e, r) => sock.log = r);else sock.log=res});
 	sock.on('close', () => {
-                //usernames[sock.room] = []
-                //ws.bcroom(sock.room, JSON.stringify({type:"users"}));
                 ws.bcroom(sock.room, JSON.stringify({type: "server", data: "Server: " + sock.username + " has disconnected"}))
                 sock.log.save()
         });
@@ -48,20 +44,13 @@ ws.on('connection', (sock,req) => {
                         case "chat":
                                 ws.bcroom(sock.room, JSON.stringify({type: "chat", data: sock.username + ": " + msg.data}))
                                 break;
-                        case "user":
-                                //usernames[sock.room].push(msg.data);
-                                sock.username = msg.data
-                                //if(usernames[sock.room].length == ws.clients.size)
-                                //        ws.bcall(JSON.stringify({type: "userlist", data: usernames[sock.room]}))
-                                break;
                         case "rename":
                                 ws.bcroom(sock.room, JSON.stringify({type: "server", data: "Server: " + sock.username + " is now known as " + msg.data}))
                                 sock.username = msg.data;
-                                //usernames[sock.room] = []
-                                //ws.bcroom(sock.room, JSON.stringify({type: "users"}));
+                                ws.bcroom(sock.room, JSON.stringify({type: "userlist", data: ws.users(sock.room)}));
                                 break;
                         case "whisper":
-                                ws.whisper(msg.user, JSON.stringify({type: "whisper", data: sock.username + ": " + msg.data}))
+                                ws.whisper(msg.tgt, JSON.stringify({type: "whisper", data: sock.username + ": " + msg.data}))
                                 break;
                         default:
                                 console.log(msg)

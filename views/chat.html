@@ -30,10 +30,10 @@
                                                 rename(text.substring(text.indexOf(" ")+1));
                                                 break;
                                         case "/w":
-                                                user = text.split(" ")[1]
+                                                tgt = text.split(" ")[1]
                                                 msg = text.split(" ").slice(2).join(" ")
-                                                $("#messages").append($("<li>").append($("<i>").text("[to " + user + "] " + ": " + msg)))
-                                                ws.send(JSON.stringify({type: "whisper", user: user, data: msg}));
+                                                $("#messages").append($("<li>").append($("<i>").text("[to " + tgt + "] " + ": " + msg)))
+                                                ws.send(JSON.stringify({type: "whisper", tgt: tgt, data: msg}));
 
                                 }
                         }
